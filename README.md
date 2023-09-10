@@ -1,4 +1,4 @@
-# PINSENSEI
+# PINGSENSEI
 
 **PINGSENSEI** is a Go backend for an application that is intended to get latency metrics from gamers for specific games on specific servers. This tool is meant to give gamers an idea of which ISPs are best placed to offer services that meet their latency requirements on the games that they play.
 
@@ -25,13 +25,14 @@ type PingRecord struct {
 
 Metrics will be captured with little to no user identifiable data. The following is a quick breakdown of some of the fields.
 The `ID` field is a general UUID-V4 field that will act as the id for the given data point.
-`GameID`,is the ID for the game that the user wishes to test, the ID is provided from a preexisting database of games or once that are user added. 
+`GameID`,is the ID for the game that the user wishes to test, the ID is provided from a preexisting database of games or once that are user added.
 
 The `ProviderID` on the other hand is going to be an Internet Service Provider identifier also from a pre-seeded database. It can be expanded to include more providers over time.
 
 `ServerIP` is the publicly listed IP Address for a given game or one that the use has found for the game that they intend to test for.
 
 ## Usage
+
 To run the application, ensure that you have [Go](https://go.dev/) installed.
 
 After cloning the repository, you can run the following command and you should get a response with the pre-seeded server for testing.
@@ -47,8 +48,8 @@ valBahrain := getPingStats("75.2.105.73") // Provide your IP here
 ```
 
 ## Status
-In Development
 
+In Development
 
 ## Contributing
 
