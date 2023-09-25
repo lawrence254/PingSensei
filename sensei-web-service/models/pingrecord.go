@@ -12,7 +12,7 @@ type PingRecord struct {
 	MinLatency string        `gorm:"size:50;not null" json:"minlatency"`
 	MaxLatency string        `gorm:"size:50;not null" json:"maxlatency"`
 	AvgLatency string        `gorm:"size:50;not null" json:"avglatency"`
-	Ping       time.Duration `gorm:"size:50;not null" json:"ping"`
+	Ping       string `gorm:"size:50;not null" json:"ping"`
 	PacketLoss float64       `gorm:"size:50;not null" json:"packetloss"`
 	GameID     uuid.UUID     `gorm:"not null;type:uuid;default:uuid_generate_v4()" json:"gameid"`
 	ProviderID uuid.UUID     `gorm:"not null;type:uuid;default:uuid_generate_v4()" json:"providerid"`

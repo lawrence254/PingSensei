@@ -3,16 +3,14 @@ package controller
 import (
 	"sensei/webservice-gin/database"
 	"sensei/webservice-gin/models"
+	"sensei/webservice-gin/utils"
 
 	"github.com/gin-gonic/gin"
+	probing "github.com/prometheus-community/pro-bing"
 )
 
-func CreatePingRecord(c *gin.Context) (*models.PingRecord, error) {
+func CreatePingRecord(stats models.PingRecord) (*models.PingRecord, error) {
 	var newPingData models.PingRecord
-
-	if err := c.BindJSON(&newPingData); err != nil {
-		return &newPingData, err
-	}
 
 	record, err := newPingData.Save()
 	if err != nil {
@@ -32,8 +30,20 @@ func GetRecordByID(id string, c *gin.Context) (*models.PingRecord, error) {
 	return &record, nil
 }
 
-func GetAllPingRecords () ([]models.PingRecord){
+func GetAllPingRecords() ([]models.PingRecord){
 	var records []models.PingRecord
 	database.Database.Find(&records)
 	return records
+}
+
+func AsyncRunPing(req *models.PingRequest, resultChan chan<- *probing.Statistics, errorChan chan <- error){
+	
+	go func() {
+		result, err := utils.PingServer(req.ServerIP)
+		if err != nil {
+			errorChan <- err
+		}else{
+		resultChan <- result
+		}
+	}()
 }
