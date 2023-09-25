@@ -9,6 +9,7 @@ import (
 	probing "github.com/prometheus-community/pro-bing"
 )
 
+// CreatePingRecord creates a ping record in the database for the given IP adderss contained within the PingRecord type.
 func CreatePingRecord(stats models.PingRecord) (*models.PingRecord, error) {
 	var newPingData models.PingRecord
 
@@ -19,6 +20,7 @@ func CreatePingRecord(stats models.PingRecord) (*models.PingRecord, error) {
 	return record, nil
 }
 
+// GetRecordByID returns the ping record corresponding to the given id string which is a UUID.
 func GetRecordByID(id string, c *gin.Context) (*models.PingRecord, error) {
 	var record models.PingRecord
 	err := database.Database.First(&record, "id = ?", id).Error
@@ -30,20 +32,22 @@ func GetRecordByID(id string, c *gin.Context) (*models.PingRecord, error) {
 	return &record, nil
 }
 
-func GetAllPingRecords() ([]models.PingRecord){
+// GetAllPingRecords returns all the ping records that have been captured.
+func GetAllPingRecords() []models.PingRecord {
 	var records []models.PingRecord
 	database.Database.Find(&records)
 	return records
 }
 
-func AsyncRunPing(req *models.PingRequest, resultChan chan<- *probing.Statistics, errorChan chan <- error){
-	
+// AsyncRunPing is an asynchronous function that will attempt to run a ping command for the given server address using the [github.com/prometheus-community/pro-bing] package.
+func AsyncRunPing(req *models.PingRequest, resultChan chan<- *probing.Statistics, errorChan chan<- error) {
+
 	go func() {
 		result, err := utils.PingServer(req.ServerIP)
 		if err != nil {
 			errorChan <- err
-		}else{
-		resultChan <- result
+		} else {
+			resultChan <- result
 		}
 	}()
 }
