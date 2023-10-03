@@ -1,67 +1,112 @@
 package main
 
 import (
+	"log"
 	"net/http"
-	"time"
+	"sensei/webservice-gin/controller"
+	"sensei/webservice-gin/database"
+	"sensei/webservice-gin/models"
+	"sensei/webservice-gin/utils"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/joho/godotenv"
+	probing "github.com/prometheus-community/pro-bing"
 )
 
-type PingRecord struct {
-	ID         string        `json:"id"`
-	MinLatency string        `json:"minlatency"`
-	MaxLatency string        `json:"maxlatency"`
-	AvgLatency string        `json:"avglatency"`
-	Ping       time.Duration `json:"ping"`
-	PacketLoss float64       `json:"packetloss"`
-	GameID     string        `json:"gameid"`
-	ProviderID string        `json:"providerid"`
-	ServerIP   string        `json:"serverip"`
-	Date       string        `json:"date"`
-}
-
-var records = []PingRecord{
-	{
-		ID:         "1f767283-b3c4-4528-b658-09ac104a094c",
-		MinLatency: "1990.341",
-		MaxLatency: "2388.485",
-		AvgLatency: "869.206",
-		Ping:       20,
-		PacketLoss: 1.41,
-		GameID:     "b7efa95c-2e88-4ecb-a869-01606a32c2ce",
-		ProviderID: "05c4ee56-dfc9-4cfc-bf5a-02371282ff0a",
-		ServerIP:   "190.110.171.222",
-		Date:       "2006-01-02",
-	}}
-
 func main() {
+
+	loadEnv()
+	loadDatabase()
+
 	router := gin.Default()
 	router.GET("/records", getPingStats)
 	router.GET("/records/:id", getPingStatsByID)
-	router.POST("/record", postPingStats)
+	router.POST("/ping", pingRunner)
 	router.Run("localhost:8080")
 }
-func getPingStats(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, records)
-}
-func postPingStats(c *gin.Context) {
-	var newPingData PingRecord
 
-	if err := c.BindJSON(&newPingData); err != nil {
+func loadDatabase() {
+	database.Connect()
+	database.Database.AutoMigrate(&models.PingRecord{})
+}
+
+func loadEnv() {
+	err := godotenv.Load(".env.local")
+
+	if err != nil {
+		log.Fatal("Error Loading the Environment")
+	}
+}
+
+func getPingStats(c *gin.Context) {
+	records := controller.GetAllPingRecords()
+	c.IndentedJSON(http.StatusOK, gin.H{"data": records})
+}
+
+
+func getPingStatsByID(c *gin.Context) {
+	id := c.Param("id")
+	stats, err := controller.GetRecordByID(id, c)
+
+	if err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"message": "No ping record exists with the given ID"})
+
 		return
 	}
 
-	records = append(records, newPingData)
-	c.IndentedJSON(http.StatusCreated, newPingData)
+	c.JSON(http.StatusOK, gin.H{"success": stats})
 }
 
-func getPingStatsByID(c *gin.Context){
-	id :=c.Param("id")
-	for _, a := range records{
-		if a.ID== id{
-			c.IndentedJSON(http.StatusOK, a)
-			return
+func pingRunner(c *gin.Context) {
+	resultChan := make(chan *probing.Statistics)
+	errorChan := make(chan error)
+	var request models.PingRequest
+	c.BindJSON(&request)
+
+	gameId, err := uuid.Parse(request.GameID)
+	if err != nil {
+		panic(err)
+	}
+	providerId, err := uuid.Parse(request.Provider)
+	if err != nil {
+		panic(err)
+	}
+
+	go controller.AsyncRunPing(&request, resultChan, errorChan)
+
+	select {
+	case result := <-resultChan:
+		pingRecord := &models.PingRecord{
+			MinLatency: utils.ConvertDurationToMs(result.MinRtt).String(),
+			MaxLatency: utils.ConvertDurationToMs(result.MaxRtt).String(),
+			AvgLatency: utils.ConvertDurationToMs(result.AvgRtt).String(),
+			Ping:       utils.ConvertDurationToMs(result.StdDevRtt).String(),
+			PacketLoss: result.PacketLoss,
+			ServerIP:   result.Addr,
+			GameID:     gameId,
+			ProviderID: providerId,
 		}
-	}	
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message":"No ping records exist with the given ID"})
+
+		pingRecord.Save()
+		fullResponse := &models.PingResponse{
+			Req:   &request,
+			Probe: pingRecord,
+		}
+
+		if err != nil {
+			panic(err.Error)
+		}
+
+		c.JSON(http.StatusOK, gin.H{"success": fullResponse})
+	case err := <-errorChan:
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+	}
+
+	close(resultChan)
+	close(errorChan)
 }
+
+//TODO Add tests for all methods
+//TODO Document all endpoints. Try adding Swagger for this
+//TODO Get IP, ISP and Game to test from the User. Run Pinger with given IP and fill in the result to the PingRecord Type

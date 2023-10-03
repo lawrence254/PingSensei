@@ -1,11 +1,11 @@
-package main
+package utils
 import probing "github.com/prometheus-community/pro-bing"
 
-func getPingStats(ipAddress string) *probing.Statistics{
+func PingServer(ipAddress string) (*probing.Statistics, error){
 	pinger, err := probing.NewPinger(ipAddress)
 
 	if err != nil {
-		panic(err)
+		return nil,err
 	}
 
 	pinger.Count =4
@@ -13,10 +13,10 @@ func getPingStats(ipAddress string) *probing.Statistics{
 	err = pinger.Run()
 
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 
 	stats := pinger.Statistics()
 
-	return stats
+	return stats, nil
 }
