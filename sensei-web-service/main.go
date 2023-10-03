@@ -22,7 +22,6 @@ func main() {
 	router := gin.Default()
 	router.GET("/records", getPingStats)
 	router.GET("/records/:id", getPingStatsByID)
-	// router.POST("/record", postPingStats)
 	router.POST("/ping", pingRunner)
 	router.Run("localhost:8080")
 }
@@ -45,15 +44,6 @@ func getPingStats(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, gin.H{"data": records})
 }
 
-// func postPingStats(stats models.PingRecord) (c *gin.Context) {
-// 	createdRecord, err := controller.CreatePingRecord(stats)
-
-// 	if err != nil {
-// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-// 	}
-
-// 	c.IndentedJSON(http.StatusCreated, gin.H{"success": createdRecord})
-// }
 
 func getPingStatsByID(c *gin.Context) {
 	id := c.Param("id")
