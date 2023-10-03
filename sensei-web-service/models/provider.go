@@ -11,7 +11,7 @@ type Providers struct {
 	ID        uuid.UUID    `gorm:"type:uuid;default:uuid_generate_v4()" json:"id"`
 	IspName   string       `gorm:"type:string;not null" json:"provider_name"`
 	Country   string       `gorm:"type:string;not null" json:"counrty"`
-	Records   []PingRecord `json:"ping_stats"`
+	Records   []PingRecord `gorm:"foreignKey:ProviderID" json:"ping_stats"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	DeletedAt time.Time

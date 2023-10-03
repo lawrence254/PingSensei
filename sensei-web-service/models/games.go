@@ -13,7 +13,7 @@ type Games struct {
 	Name        string         `gorm:"type:string" json:"game_name"`
 	Publisher   string         `gorm:"type:string" json:"publisher_name"`
 	IpAddresses pq.StringArray `gorm:"type:text[]" json:"ip_addresses"`
-	Records 	[]PingRecord	`json:"ping_stats"`
+	Records 	[]PingRecord	`gorm:"foreignKey:GameID" json:"ping_stats"`
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 	DeletedAt   time.Time
